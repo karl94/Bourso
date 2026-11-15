@@ -1,0 +1,36 @@
+name: Collecte quotidienne BRVM
+
+on:
+  schedule:
+    # 18 h 05 à Abidjan (UTC+0), du lundi au vendredi
+    - cron: "5 18 * * 1-5"
+  workflow_dispatch: {}   # bouton « Run workflow » pour lancer à la main
+
+concurrency:
+  group: collecte
+  cancel-in-progress: false
+
+jobs:
+  collecte:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: collecte
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: collecte/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Tests du parseur
+        run: python -m pytest -q tests
+      - name: Collecte
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python main.py

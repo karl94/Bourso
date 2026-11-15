@@ -1,0 +1,34 @@
+name: Essai de collecte (sans écriture)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  essai:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: collecte
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Lecture de brvm.org et affichage du résultat
+        run: |
+          python - <<'PY'
+          import main, brvm
+          s = main.session_http()
+          html = brvm.telecharger(s)
+          open("page_brvm.html", "w", encoding="utf-8").write(html)
+          PY
+          python main.py --essai --html page_brvm.html
+      - name: Conserver la page lue (pour diagnostic)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: page-brvm
+          path: collecte/page_brvm.html
+          retention-days: 7
